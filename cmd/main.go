@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"sort"
+	"strconv"
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	cv "gocv.io/x/gocv"
@@ -36,8 +37,22 @@ func (p PairList) Len() int           { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
+const (
+	defaultTolerance float64 = 12
+)
+
 func main() {
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: go run main.go <image_path> <tolerance>")
+		return
+	}
+
 	imgPath := os.Args[1]
+	var tolerance float64 = defaultTolerance
+	toleranceString := os.Args[2]
+	if s, err := strconv.ParseFloat(toleranceString, 64); err == nil {
+		tolerance = s
+	}
 
 	img := cv.IMRead(imgPath, cv.IMReadColor)
 	cv.Resize(img, &img, image.Point{X: 640, Y: 480}, 0, 0, cv.InterpolationArea)
@@ -45,7 +60,7 @@ func main() {
 
 	colorFrequencies, colorRgbs := createColorMappings(&img)
 	rankedColors := rankColorsByFrequency(colorFrequencies)
-	compressed := compressColors(rankedColors, colorRgbs, 12)
+	compressed := compressColors(rankedColors, colorRgbs, tolerance)
 
 	fmt.Println(compressed)
 }
